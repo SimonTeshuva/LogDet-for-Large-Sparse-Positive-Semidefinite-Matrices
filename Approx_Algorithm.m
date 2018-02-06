@@ -33,7 +33,6 @@ G = 0;
 x = chebfun('x');
 p = log((1-((1-2*delta).*x+1)/2)); % using this d we get a complex chebyshev fn
 c = chebpoly(p,n); % this is not the funcion you are looking for
-c = fliplr(c);
 % plot c and p to see if we make sense
 % investigate chebfun
 % normalisation of chebyshev coefficients
@@ -59,7 +58,6 @@ end
 %              =log(det(alpha*I)*det(A_old))
 %              =size*log(alpha)+logdet(A_old)
 % logdet(A_old)=logdet(A_new)-size*log(alpha)
-G
 logdet = G-dataset_size(1)*log(alpha);
 
 retVal = logdet;

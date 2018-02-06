@@ -25,7 +25,7 @@ S = S+S'-2*diag(diag(S));
 fprintf('S_2\n');
 % make the matrix diagonally dominant by adding setting the diagonals to be
 % 1e3+abs(sum(row))
-val_d = sum(abs(S'))+diag_dom_constant;
+val_d = sum(abs(S'))+diag_dom_const;
 % S_diag = sparse(1:size, 1:size, val_d);
 % S = S + S_diag;
 S = spdiags(val_d', 0, S);

@@ -5,7 +5,7 @@ clc;
 a = 1e-3;
 b = 1;
 N = 15;
-[t, w] = lgwt(N, a,b);
+[t, w] = lgwt(N,a,b);
 
 x = a:1e-3:b;
 logx = log(x);
