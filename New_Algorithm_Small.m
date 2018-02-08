@@ -2,11 +2,14 @@ close all;
 clear all;
 clc;
 
-a = 1e-3;
-b = 1;
-N = 15;
-[t, w] = lgwt(N,a,b);
+tmin = 0;
+tmax = 1;
+N = 25; % play around with
+%  MATLAB log? what does it do
+[t, w] = lgwt(N,tmin,tmax);
 
+a = 1e-3;
+b = 1/a;
 x = a:1e-3:b;
 logx = log(x);
 
@@ -17,5 +20,7 @@ end
 logx_gauss2 = (x-1) .* sum(w./(t.*x + (1-t)));
 
 
-plot(x, logx, 'kd', x, logx_gauss, 'r-')
+% plot(x, logx, 'kd', x, logx_gauss, 'r-')
+error = logx_gauss - logx;
+loglog(x, abs(error));
 legend('log(x)', 'GQ log(x)')
