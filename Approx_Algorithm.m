@@ -51,7 +51,7 @@ for i = 1:m
             w1 = w2;
         end
     end
-    fprintf('%f\n', 100*i/m);
+    fprintf('%.f\n', 100*i/m);
     G = G + v'*u/m;
 end
 % logdet(A_new)=logdet(alpha*A_old)

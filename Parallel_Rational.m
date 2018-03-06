@@ -1,10 +1,10 @@
-function retVal = New_Algorithm(dataset, M, N)
+function retVal = Parallel_Rational(dataset, M, N)
 tmin = 0;
 tmax = 1;
 [t,w] = lgwt(M,tmin,tmax);
 dataset_size = size(dataset);
 
-% logdet(B) ~ tr(log(B)) = 
+% logdet(B) ~ tr(log(B)) =
 %(1/N)*sum(i=1:N) (v'*[(B-I)*sum(j=1:m)(wj*(tj*B+(1-tj)*I)^-1]*v)
 B = dataset;
 I = speye(dataset_size);
@@ -23,7 +23,7 @@ I = speye(dataset_size);
 % need to remove loops
 grand_total = 0;
 % test sizes for N
-for i=1:N
+parfor i=1:N
     v = ((rand(1,dataset_size(1))<.5)*2 - 1)'; % randmacher vector;
     total = 0;
     for j = 1:M
@@ -35,7 +35,7 @@ for i=1:N
     end
     vBI_linsys = v'*(B-I)*total;
     grand_total = grand_total + vBI_linsys;
-	fprintf('%.f\n', 100*i/N);
+    fprintf('%.f\n', 100*i/N);
 end
 grand_total = grand_total/N;
 retVal = grand_total;
