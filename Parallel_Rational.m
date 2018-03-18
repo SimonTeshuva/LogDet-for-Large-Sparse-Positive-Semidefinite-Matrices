@@ -30,7 +30,9 @@ parfor i=1:N
         wj = w(j);
         tj = t(j);
         % need to convert \ to pcg
-        linear_system = (tj*B+(1-tj)*I)\v;
+%         linear_system = pcg(tj*B+(1-tj)*I,v);
+        linear_system = pcg_quiet(tj*B+(1-tj)*I,v);
+        %         linear_system = (tj*B+(1-tj)*I)\v;
         total = total+wj*linear_system;
     end
     vBI_linsys = v'*(B-I)*total;

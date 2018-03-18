@@ -7,7 +7,7 @@ clc;
 
 disp('starting');
 
-dataset_size = 1e4;
+dataset_size = 1e5;
 epr = 10;
 diag_dom_const = 1e-3;
 tic
@@ -15,7 +15,7 @@ dataset = Sparse_Dataset(dataset_size, epr, diag_dom_const);
 dataset_time = toc;
 disp('dataset done')
 n = 14;
-m = 15;
+m = 100;
 %  logdet = Approx_Algorithm(dataset, m, n, diag_dom_const);
 % fprintf('logdet(A) = %.5d + %.5di\n', real(logdet), imag(logdet));
 
@@ -46,13 +46,13 @@ prational_time = toc;
 disp('prat done');
 
 
-clc
-if dataset_size < 6e4
-fprintf('result from %s method is %.3f, and took %.3f milliseconds \n', 'exact', exact_val, 1000*exact_time);
+% clc
+if dataset_size < 6e3
+fprintf('result from %s method is %.3f, and took %.3f seconds\n', 'exact', exact_val, exact_time);
 end
-fprintf('result from %s method is %.3f, and took %.3f milliseconds \n', 'chebyshev', cheb_approx, 1000*cheb_time);
+fprintf('result from %s method is %.3f, and took %.3f seconds\n', 'chebyshev', cheb_approx, cheb_time);
 % fprintf('result from %s method is %.3f, and took %.3f milliseconds \n', 'rational', rational_approx, 1000*rational_time);
-fprintf('result from %s method is %.3f, and took %.3f milliseconds \n', 'parallel rational', prational_approx, 1000*prational_time);
+fprintf('result from %s method is %.3f, and took %.3f seconds\n', 'parallel rational', prational_approx, prational_time);
 
 % for N=5:5:50
 %     for M = 5:5:50
