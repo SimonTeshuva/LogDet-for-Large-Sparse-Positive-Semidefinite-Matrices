@@ -1,6 +1,4 @@
 function retVal = Sparse_Dataset(size, epr, diag_dom_const)
-
-
 % if we wand n elements per row, and the matrix is symetric, we need to
 % generate n/2 points per row
 no_samples = floor(epr/2);
