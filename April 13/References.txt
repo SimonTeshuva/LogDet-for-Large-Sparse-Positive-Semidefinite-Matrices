@@ -1,0 +1,20 @@
+background reading
+Large-scale Log-determinant Computation through Stochastic Chebyshev Expansions
+Nimbus–7 Total Ozone
+ON OPTIMAL REORDERINGS OF SPARSE MATRICES FOR PARALLEL CHOLESKY FACTORISATION
+Parameter Estimation in High Dimensional Gaussian Distributions
+Semidefnite approximations of the matrix logarithm
+
+on kneser graphs
+https://www.win.tue.nl/~aeb/graphs/Kneser.html
+http://webhome.cs.uvic.ca/~wendym/courses/425/14/generators/pconley.html
+http://mathworld.wolfram.com/KneserGraph.html
+https://en.wikipedia.org/wiki/Kneser_graph
+
+on legandre gauss quadratre
+https://au.mathworks.com/matlabcentral/fileexchange/4540-legendre-gauss-quadrature-weights-and-nodes
+
+the Chebfun library
+http://www.chebfun.org/
+
+James Saunderson
