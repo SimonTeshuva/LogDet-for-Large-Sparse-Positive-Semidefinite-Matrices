@@ -1,4 +1,6 @@
 function logdet = Rational(dataset, M, N, k)
+% optimal N is 20 done in 1 block
+
 B = dataset;
 dataset_size = size(B);
 n = dataset_size(1);

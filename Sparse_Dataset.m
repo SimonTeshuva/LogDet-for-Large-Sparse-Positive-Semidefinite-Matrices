@@ -1,3 +1,11 @@
+%% Diagonally Dominant Sparse Positive Semidefinite Matrix Generator
+% Author: Simon Tesuva
+% Date Last Modified: 5/4/2018
+
+% This function takes in a matrix size, the number of elements per row, and
+% a small number to ensure diagonal dominance, and produces a DDSPSDM
+
+%% Code
 function retVal = Sparse_Dataset(size, epr, diag_dom_const)
 % if we wand n elements per row, and the matrix is symetric, we need to
 % generate n/2 points per row
@@ -24,17 +32,11 @@ fprintf('S_2\n');
 % make the matrix diagonally dominant by adding setting the diagonals to be
 % 1e3+abs(sum(row))
 val_d = sum(abs(S'))+diag_dom_const;
-% S_diag = sparse(1:size, 1:size, val_d);
-% S = S + S_diag;
+% replace the values along the diagonal with the values in val_d to ensure
+% that the matrix is diagonally dominant
 S = spdiags(val_d', 0, S);
 
 fprintf('S_DD\n');
 
 retVal = S;
-
 end
-
-% 1e4 is instant and is 2MB large
-% 1e5 takes a second and is 20MB large
-% 1e6 takes 5 seconds and is 200MB large
-% 1e7 takes 1 minute and is arouind 2GB large
