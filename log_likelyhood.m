@@ -1,51 +1,99 @@
-function log_likelyhood(fileName, rho_0)
+%% Log-Likelihood Maximisation
+% Author: Simon Tesuva
+% Date Last Modified: 5/4/2018
+
+% this function takes as input the name of a kneser graph, a hidden value
+% for rho, a logdet computation method, the order of polynomial to be used,
+% and a number of samples. it then perfoms an experiment to try to maximize
+% the log-likelihood function. 
+
+%% Experiment 2
+function [estimates, rho_vect] = log_likelyhood(fileName, rho_hidden, method, order, samp)
     if nargin == 0
-        fileName = 'kneser (13,6).txt';
-        rho_0 = -0.22;
-    elseif nargin == 2
-        fprintf('using kneser graph and rho provided by user');
+        fileName = 'kneser (17,8).txt';
+        rho_hidden = -0.22;
+        method = 'Rational';
+        order = 14;
+        samp = 20;
+    elseif nargin == 5
+        nk = split(fileName(9:end-5),',');
+        fileNameValid = strcmp(fileName(1:8),'kneser (')&&(str2num(nk{1})==2*str2num(nk{2})+1)&&strcmp(fileName(end-4:end),').txt');
+        if (order < 1 || samp < 1 ||...
+                ~(strcmp(method,'Cholesky')||strcmp(method,'Chebyshev')||strcmp(method,'Rational')) ||...
+                rho_hidden>1 || rho_hidden < -1 || ~fileNameValid)
+            fprintf('invalid input\n');
+            return
+        else
+            fprintf('using kneser graph and rho provided by user\n');
+        end
     else
         return
     end
     
+    %% Generating the Hidden Information Matrix Jrho0
     [n,k,A]=generate_adjacency_matrix(fileName);
     I = speye(size(A));
-    N = nchoosek(n,k);
+    mat_dim = nchoosek(n,k);
     degree = nchoosek(n-k,k);
-    Jrho0 = A*rho_0 + I*(degree+1);
-	amd = symamd(Jrho0); % The SYMAMD command uses the approximate minimum degree algorithm (a powerful graph-theoretic technique) to produce large blocks of zeros in the matrix.
-	Lrho0 = chol(Jrho0(amd,amd));
-%     Lrho0 = chol(Jrho0);
+    Jrho_hidden = A*rho_hidden + I*(degree+1); % making Jrho0 diagonally dominant
+	amd = symamd(Jrho_hidden); % The SYMAMD command uses the approximate minimum degree algorithm (a powerful graph-theoretic technique) to produce large blocks of zeros in the matrix.
     
-    
+    %% Random Samples of Jrho0
+    % a normally distibuted random sample of Jrho0 can be found using the
+    % formula Lrho0'\randn(mat_dim,1). 
+	fprintf('finding cholesky factorisation of Jrho0\n');
+    Lrho0 = chol(Jrho_hidden(amd,amd)); 
     min_rho = -1;
     max_rho = 1;
-    no_steps = 20;
-    step_size = (max_rho-min_rho)/no_steps;
+    N = 100;
+    step_size = (max_rho-min_rho)/N;
     rho_vect = min_rho:step_size:max_rho;
     estimates = zeros(size(rho_vect));
-    
-    X = zeros(no_steps,N);
-    for rho_counter = 1:no_steps
-        x = Lrho0'\randn(N,1);
-%         X(i,amd) = x(or amd here)'; % need to un-amd the x
+    fprintf('generating random samples\n');
+    X = zeros(N,mat_dim);
+    for rho_counter = 1:N
+        x = Lrho0'\randn(mat_dim,1);
         X(rho_counter,amd) = x'; % need to un-amd the x
+        fprintf('found sample #%.f of %.f\n',rho_counter,N);
     end
-   
+
+    %% Sweeping over rho
+    % Check values for rho in the range [-1,1]. the value that maximises
+    % the log-likelihood function will be used as the estimate for rho0
     for rho_counter=1:length(rho_vect)
         rho = rho_vect(rho_counter);
-        Jrho = A*rho + I*(k+1);
-        amd = symamd(Jrho); % The SYMAMD command uses the approximate minimum degree algorithm (a powerful graph-theoretic technique) to produce large blocks of zeros in the matrix.
-        logdetJrho = full(2*sum(log(diag(chol(Jrho(amd,amd)))))); 
-        log_like=0;
-        for j=1:no_steps
-            Xj = X(j,:)';
-            sample = -0.5*(Xj'*Jrho*Xj)+0.5*logdetJrho;
+        Jrho = A*rho + I*(degree+1);
+        
+        % choose a method based on user input
+        if strcmp(method,'Cholesky')
+        	amd = symamd(Jrho); % The SYMAMD command uses the approximate minimum degree algorithm (a powerful graph-theoretic technique) to produce large blocks of zeros in the matrix.
+            logdetJrho = full(2*sum(log(diag(chol(Jrho(amd,amd)))))); 
+        elseif strcmp(method,'Rational')
+            block_size = min(20,samp);
+            logdetJrho = Rational(Jrho,order,samp,block_size);
+        elseif strcmp(method,'Chebyshev')
+            lmax = 5*max(max(Jrho));
+            lmin = 0.85*min(2*diag(Jrho)'-sum(abs(Jrho)));
+            logdetJrho = ChebLogDet(Jrho,samp,order,lmin,lmax);
+        else
+            return;
+        end
+        
+        % log-likelihood = 0.5*N*logdetJrho - N*0.5*(Xi'*Jrho*Xi);
+        log_like=0.5*N*logdetJrho;
+        
+        for i=1:N
+            Xi = X(i,:)';
+            sample = -0.5*(Xi'*Jrho*Xi);
             log_like = log_like+sample;
         end
         estimates(rho_counter) = log_like;
+        
+        fprintf('checked rho = %.2f\n',rho);
     end
     
+    
+    %% Plotting the Results
     figure (1)
     plot(rho_vect, estimates)
     indexmax = find(max(estimates) == estimates);
@@ -53,10 +101,10 @@ function log_likelyhood(fileName, rho_0)
     ymax = estimates(indexmax);
     hold on
     plot(xmax,ymax,'ro')
-    strmax = ['Maximum at rho = ',num2str(xmax)];
+    strmax = ['Maximum at \rho = ',num2str(xmax)];
     text(xmax,ymax,strmax,'HorizontalAlignment','right');
     hold off
-    xlabel('rho');
-    ylabel('log-likelyhood');
-    title('Log-Likelyhood estimation for hidden Rho')
+    xlabel('\rho');
+    ylabel('log-likelyhood estimate');
+    title('Log-Likelyhood estimation for hidden \rho_0 = -0.22')
 end

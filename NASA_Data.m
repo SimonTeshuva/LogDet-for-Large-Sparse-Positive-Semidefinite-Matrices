@@ -1,3 +1,5 @@
+
+
 function retVal = NASA_Data(ideal_sampling_number, ideal_function_order)
     A = generate_matrix_NASA();
     sizeA = size(A);

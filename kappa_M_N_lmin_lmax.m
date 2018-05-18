@@ -1,4 +1,16 @@
+%% Parameter Sweep for Various Variables
+% Author: Simon Tesuva
+% Date Last Modified: 14/5/2018
+
+% This function uses the adjacency matrix of a kneser graph to sweep over 
+% the condition number, function order, number of samples, estimates of
+% lmin and lmax, and the number of times to run a method to average the
+% results. the logdet is computed using the Chebyshev Function
+% Appoximation, Rational Function Approximation, and Exact logdet. the
+% results, as well as the compute times and the parameters used for each
+% comprison are then written to an output file. 
 function kappa_M_N_lmin_lmax(fileName, kappas, orders, samples,lambda_lows,lambda_highs,averages)
+    %% Taking values for parameters
     if nargin == 0
         fileName = 'kneser (13,6).txt';
         kappas = [1.01, 1e10];
@@ -22,6 +34,8 @@ function kappa_M_N_lmin_lmax(fileName, kappas, orders, samples,lambda_lows,lambd
         fprintf('starting parallel pool\n');
     end
     
+    % run compare_methods on every permuation of the 6 parameters, and
+    % write results to output
     fprintf(fileID, 'results for experiment 3 at timestamp %s\n', strcat(num2str(fix(clock))));
     fprintf(fileID, 'samp#\torder\tkappa\taverages\texact\trational\ttime\tchebyshev\ttime\tlambda_min\tlambda_max\n');
     for i = 1:length(samples)
@@ -51,6 +65,10 @@ function kappa_M_N_lmin_lmax(fileName, kappas, orders, samples,lambda_lows,lambd
     fclose(fileID);
 end
 
+%% Eigenvalues and Multiplicities for Kneser (n,k)
+
+% compute the eigenvalues and their multiplicities eigenvectors 
+% using known formulas
 function [eigenvalues, multiplicities] = kneser_eigenvalues(n,k)
     evals = [];
     mults = [];
@@ -68,6 +86,11 @@ function [eigenvalues, multiplicities] = kneser_eigenvalues(n,k)
     multiplicities = mults;
 end
 
+
+% for a given matrix, and set of parameters being swept over, calculate the
+% logdet using the exact formula, the Rational Function Method, and the
+% Chebyshev Function Method, and store the result and the time taken to
+% compute it.
 function retVal = compare_methods(A,n,k,kappa,order,sampling_number,lmin,lmax)
     [evals, mults] = kneser_eigenvalues(n,k);
     I = speye(sum(mults), sum(mults));
