@@ -28,61 +28,67 @@
         data_needed = load('NASA_Data_needed.txt');
     end
     
+    fprintf('starting\n');
     integer_vals_long = round(100*(data_needed(:,1)-min(data_needed(:,1))))+1;
     integer_vals_lat = round(100*(data_needed(:,2)-min(data_needed(:,2))))+1;
+    Y=data_needed(:,3);
+    
+    fprintf('got data\n');
     
     save('temp.mat');
     % probably can be done better with find()
-    m=180*100*2;
-    n=90*100*2;
-    Mobs = logical(sparse(integer_vals_long,integer_vals_lat,1,m,n,length(integer_vals_long))); % last one not imporant
+    m=max(max(integer_vals_long),180*100*2);
+    n=max(max(integer_vals_lat),90*100*2);
+    
+    fprintf('got Mobs\n');
+    Mobs=logical(sparse(integer_vals_long,integer_vals_lat,Y,m,n));
     
     z=reshape(1:m*n,m,n);
     M_obs_indecies = z(Mobs);
-    M_hidden_indicies = z(~Mobs);
+	M_hidden_indicies = z(~Mobs);
+    fprintf('got Mobs indices\n');
+
+    adj_path=sparse(diag(ones(m-1,1),1)+diag(ones(m-1,1),-1));
+    fprintf('got adj_path\n');
+    adj_cycle=sparse(diag(ones(n-1,1),1)+diag(ones(n-1,1),-1)+diag(1,n-1)+diag(1,-n+1));
+    fprintf('got adj_cycle\n');
     
-    Y=data_needed(:,3);
+	right = Mobs(:,[2:end,1]);
+    left = Mobs(:,[end,1:end-1]);
+    down = [Mobs(2:end,:);zeros(1,n)];
+    up = [zeros(1,n);Mobs(1:end-1,:)];
+    deg_mat=right+left+down+up;
+    fprintf('got degrees of vertices\n');
+    deg=reshape(deg_mat,m*n,1);
     
-    Jtm = Generate_Jtm(data_needed);
-    V = Generate_V(data_needed);
-    Jtp = V*V';
+    cycle = kron(adj_cycle,speye(m));
+    path = kron(speye(n),adj_path);
+    A=cycle+path;
+    fprintf('got A\n');
+    
+    Jtm = spdiag(deg)-A;
+    V=Jtm*diag(1./deg);
+    Jtp=V*V';
     
     alpha_vector = -10:2:10;
     beta_vector = -10:2:10;
     
-    [alpha_max, beta_max] = max_alpha_beta(alpha_vect,beta_vect,Y);
-	I = speye(size(Jtp));
-
-    J = alpha_max*I + beta_max*Jtp + (1-beta_max)*Jtm;
-	Jxy = J;
-    Jyy = J;
+    [alpha,beta]=max_alpha_beta(alpha_vect,beta_vect,Y,Jtp,Jtm);
     
-%     X=inv(Jxy)*(inv(inv(Jyy))*Y);
-%     X=inv(Jxy)*(Jyy*Y); % need to not take inverse
-    % Jxy*X=Jyy*Y
-    X=pcg(Jxy,Jyy*Y); % needs updating
-        
-    % generate matrix B with Y & X in right locations
-    % start with zeros() & fill with boolean index.
-    imagesc(B) % may need to flip indexes if image is upside down/reversed (fliplr)
+    I=speye(size(Jtm));
     
-% end
+	J = alpha*I + beta*Jtp + (1-beta)*Jtm;
+    
+% 	Jxx = J(M_obs_indecies,M_obs_indecies);
+%	Jxy = J(M_obs_indecies,M_hidden_indicies);
+% 	Jyx = J(M_hidden_indicies,M_obs_indecies);
+%	Jyy = J(M_hidden_indicies,M_hidden_indicies);
+    
+    X=pcg(J(M_obs_indecies,M_obs_indecies),J(M_obs_indecies,M_hidden_indicies)*Y);
+    
+    imshow(Y,X);
 
-function Jtm = Generate_Jtm(data)
-%     adj_path=diag(ones(m-1,1),1)+diag(ones(m-1,1),-1);
-%     adj_cycle=diag(ones(n-1,1),1)+diag(ones(n-1,1),-1)+diag(1,n-1)+diag(1,-n+1);
-%     A = kron(adj_cycle,speye(m))+kron(speye(n),adj_path);
-    Jtm = speye(length(data(:,1)),length(data(:,1)));
-end
-
-function V = Generate_V(data)
-%     adj_path=diag(ones(m-1,1),1)+diag(ones(m-1,1),-1);
-%     adj_cycle=diag(ones(n-1,1),1)+diag(ones(n-1,1),-1)+diag(1,n-1)+diag(1,-n+1);
-%     A = kron(adj_cycle,speye(m))+kron(speye(n),adj_path);
-    V = speye(size(data));
-end
-
-function [alpha_max, beta_max] = max_alpha_beta(alpha_vect,beta_vect,Y)
+function [alpha_max, beta_max] = max_alpha_beta(alpha_vect,beta_vect,Y,Jtp,Jtm)
     alpha_beta_matrix = zeros(length(alpha_vector),length(beta_vector));
     I = speye(size(Jtp));
     for i=1:length(alpha_vect)
@@ -90,17 +96,14 @@ function [alpha_max, beta_max] = max_alpha_beta(alpha_vect,beta_vect,Y)
         for j=1:length(beta_vect)
             beta=beta_vect(j);
             J = alpha*I + beta*Jtp + (1-beta)*Jtm;
-            Jxx = J;
-            Jxy = J;
-            Jyx = J;
-            Jyy = J;
+    
             logdet_J = Rational(J,14,20,20); % if this takes too long, down sample
-            logdet_Jxy = Rational(Jxy,14,20,20);
+            logdet_Jxy = Rational(J(M_obs_indecies,M_hidden_indicies),14,20,20);
 
             loglike_J=0.5*logdet_J;
             loglike_J=loglike_J-0.5*logdet_Jxy;
-            loglike_J=loglike_J-0.5*Y'*Jyy*Y;
-            loglike_J=loglike_J+0.5*Y'*Jyx*pcg(Jxx,Jxy*Y);
+            loglike_J=loglike_J-0.5*Y'*J(M_hidden_indicies,M_hidden_indicies)*Y;
+            loglike_J=loglike_J+0.5*Y'*J(M_hidden_indicies,M_obs_indecies)*pcg(J(M_obs_indecies,M_obs_indecies),J(M_obs_indecies,M_hidden_indicies)*Y);
             
             alpha_beta_matrix(i,j)=loglike_J;
         end
