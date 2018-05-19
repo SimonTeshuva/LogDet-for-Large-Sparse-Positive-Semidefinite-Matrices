@@ -35,7 +35,6 @@
     
     fprintf('got data\n');
     
-    save('temp.mat');
     % probably can be done better with find()
     m=max(max(integer_vals_long),180*100*2);
     n=max(max(integer_vals_lat),90*100*2);
@@ -45,13 +44,7 @@
     
     z=reshape(1:m*n,m,n);
     M_obs_indecies = z(Mobs);
-	M_hidden_indicies = z(~Mobs);
     fprintf('got Mobs indices\n');
-
-    adj_path=sparse(diag(ones(m-1,1),1)+diag(ones(m-1,1),-1));
-    fprintf('got adj_path\n');
-    adj_cycle=sparse(diag(ones(n-1,1),1)+diag(ones(n-1,1),-1)+diag(1,n-1)+diag(1,-n+1));
-    fprintf('got adj_cycle\n');
     
 	right = Mobs(:,[2:end,1]);
     left = Mobs(:,[end,1:end-1]);
@@ -61,19 +54,32 @@
     fprintf('got degrees of vertices\n');
     deg=reshape(deg_mat,m*n,1);
     
+    adj_path=sparse(diag(ones(m-1,1),1)+diag(ones(m-1,1),-1));
+    fprintf('got adj_path\n');
+    adj_cycle=sparse(diag(ones(n-1,1),1)+diag(ones(n-1,1),-1)+diag(1,n-1)+diag(1,-n+1));
+    fprintf('got adj_cycle\n');
+
+    
     cycle = kron(adj_cycle,speye(m));
+    fpintf('got cycle\n');
     path = kron(speye(n),adj_path);
+    fpintf('got path\n');
     A=cycle+path;
     fprintf('got A\n');
     
     Jtm = spdiag(deg)-A;
+	fpintf('got Jtm\n');
     V=Jtm*diag(1./deg);
+	fpintf('got V\n');
     Jtp=V*V';
-    
+	fpintf('got Jtp\n');
+
     alpha_vector = -10:2:10;
     beta_vector = -10:2:10;
-    
-    [alpha,beta]=max_alpha_beta(alpha_vect,beta_vect,Y,Jtp,Jtm);
+
+    M_hidden_indicies = z(~Mobs);
+    fprintf('got M_hidden_indices\n');
+    [alpha,beta]=max_alpha_beta(alpha_vect,beta_vect,Y,Jtp,Jtm,M_obs_indecies,M_hidden_indicies);
     
     I=speye(size(Jtm));
     
@@ -83,12 +89,12 @@
 %	Jxy = J(M_obs_indecies,M_hidden_indicies);
 % 	Jyx = J(M_hidden_indicies,M_obs_indecies);
 %	Jyy = J(M_hidden_indicies,M_hidden_indicies);
-    
+	
     X=pcg(J(M_obs_indecies,M_obs_indecies),J(M_obs_indecies,M_hidden_indicies)*Y);
     
     imshow(Y,X);
 
-function [alpha_max, beta_max] = max_alpha_beta(alpha_vect,beta_vect,Y,Jtp,Jtm)
+function [alpha_max, beta_max] = max_alpha_beta(alpha_vect,beta_vect,Y,Jtp,Jtm,M_obs_indecies,M_hidden_indicies)
     alpha_beta_matrix = zeros(length(alpha_vector),length(beta_vector));
     I = speye(size(Jtp));
     for i=1:length(alpha_vect)
